@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Material 3 Tonal Palette Generator</title>
+  <script type="module">
+    import {
+      argbFromHex,
+      hexFromArgb,
+      TonalPalette
+    } from "https://esm.sh/@material/material-color-utilities";
+
+    function generateTonalPalette(baseHex) {
+      const argb = argbFromHex(baseHex);
+      const palette = TonalPalette.fromInt(argb);
+      const tones = {};
+      for (let tone = 0; tone <= 100; tone++) {
+        tones[tone] = hexFromArgb(palette.tone(tone)).toUpperCase();
+      }
+      return tones;
+    }
+
+    window.copyColor = function (color) {
+      navigator.clipboard.writeText(color);
+      const msg = document.getElementById("message");
+      msg.textContent = `✅ ${color} کپی شد`;
+      msg.style.opacity = 1;
+      setTimeout(() => (msg.style.opacity = 0), 1500);
+    };
+
+    window.downloadJSON = function (tones, baseHex) {
+      const blob = new Blob([JSON.stringify(tones, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `tonal-palette-${baseHex.replace("#", "")}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    window.generatePalette = function () {
+      const input = document.getElementById("colorInput").value.trim();
+      const output = document.getElementById("output");
+      const grid = document.getElementById("grid");
+      const jsonBox = document.getElementById("jsonBox");
+      const downloadBtn = document.getElementById("downloadBtn");
+
+      if (!/^#([0-9A-F]{3}){1,2}$/i.test(input)) {
+        output.textContent = "❌ لطفاً یک کد HEX معتبر وارد کن (مثلاً ‎#6750A4‎)";
+        grid.innerHTML = "";
+        jsonBox.textContent = "";
+        downloadBtn.style.display = "none";
+        return;
+      }
+
+      const tones = generateTonalPalette(input);
+      output.textContent = `🎨 Tonal palette for ${input}:`;
+      downloadBtn.style.display = "inline-block";
+      downloadBtn.onclick = () => downloadJSON(tones, input);
+
+      grid.innerHTML = Object.entries(tones)
+        .map(([tone, color]) => `
+          <div class="tone" style="background:${color}">
+            <div class="tone-info">
+              <strong>${tone}</strong>
+              <code>${color}</code>
+            </div>
+            <button onclick="copyColor('${color}')">📋</button>
+          </div>
+        `)
+        .join("");
+
+      jsonBox.textContent = JSON.stringify(tones, null, 2);
+    };
+  </script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f9f9f9;
+      color: #333;
+      text-align: center;
+      padding: 1.5rem;
+      direction: rtl;
+    }
+    h1 {
+      margin-bottom: 0.5rem;
+      font-size: 1.4rem;
+    }
+    input {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 140px;
+      text-align: center;
+    }
+    button {
+      margin: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #6750A4;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    button:hover {
+      background: #5a4690;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 2px;
+      margin-top: 1rem;
+      justify-items: stretch;
+    }
+    .tone {
+      aspect-ratio: 1/1;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+      padding: 0.3rem;
+      transition: transform 0.2s;
+    }
+    .tone:hover {
+      transform: scale(1.03);
+      z-index: 10;
+    }
+    .tone-info {
+      text-align: center;
+    }
+    code {
+      font-family: monospace;
+      background: rgba(255,255,255,0.3);
+      padding: 2px 4px;
+      border-radius: 4px;
+      display: block;
+      margin-top: 2px;
+      font-size: 0.7rem;
+    }
+    .tone button {
+      background: rgba(0,0,0,0.3);
+      border: none;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: white;
+      font-size: 0.7rem;
+      cursor: pointer;
+    }
+    .tone button:hover {
+      background: rgba(0,0,0,0.5);
+    }
+    #jsonContainer {
+      margin-top: 1.5rem;
+      text-align: left;
+      max-width: 95%;
+      margin-inline: auto;
+    }
+    #jsonBox {
+      background: #222;
+      color: #0f0;
+      padding: 0.8rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      white-space: pre;
+      font-family: monospace;
+      font-size: 0.8rem;
+    }
+    #message {
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    @media (max-width: 600px) {
+      h1 { font-size: 1.2rem; }
+      input { width: 120px; font-size: 0.9rem; }
+      button { padding: 0.4rem 0.8rem; font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎨 Material 3 Tonal Palette Generator</h1>
+  <p>یک رنگ پایه وارد کن تا پالت تونال آن را ببینی:</p>
+  <input id="colorInput" type="text" placeholder="#6750A4" />
+  <button onclick="generatePalette()">تولید پالت</button>
+  <p id="output"></p>
+  <button id="downloadBtn" style="display:none;">💾 دانلود JSON</button>
+  <div id="grid"></div>
+  <div id="jsonContainer">
+    <h3>📄 خروجی JSON:</h3>
+    <pre id="jsonBox"></pre>
+  </div>
+  <div id="message"></div>
+</body>
+</html>
